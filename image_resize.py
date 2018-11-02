@@ -67,6 +67,14 @@ def generate_output_path(path, size):
     return re.sub(r"\.", "__{}x{}.".format(height, width), path)
 
 
+def save_image(image, path):
+    try:
+        image.save(path)
+        print("Image saved. Path to file: {}".format(path))
+    except IOError:
+        exit("Could not save image")
+
+
 if __name__ == "__main__":
     arguments = get_args()
     if validate_arguments(arguments) is None:
@@ -92,8 +100,4 @@ if __name__ == "__main__":
             arguments.output,
             modified_image.size
         )
-    try:
-        modified_image.save(output_path)
-        print("Image saved. Path to file: {}".format(output_path))
-    except IOError:
-        exit("Could not save image")
+    save_image(modified_image, output_path)
