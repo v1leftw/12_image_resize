@@ -49,6 +49,8 @@ def open_image(path_to_image):
 def resize_image(image, width, height):
     user_image_height, user_image_width = image.size
     image_proportions = user_image_width/user_image_height
+    if image_proportions != width/height:
+        print("Proportions of given image and output image are not equal")
     if width is None:
         return image.resize((height, user_image_width * image_proportions))
     if height is None:
@@ -72,7 +74,7 @@ def save_image(image, path):
         image.save(path)
         print("Image saved. Path to file: {}".format(path))
     except IOError:
-        exit("Could not save image")
+        print("Could not save image")
 
 
 if __name__ == "__main__":
@@ -86,8 +88,6 @@ if __name__ == "__main__":
     if arguments.scale is not None:
         modified_image = rescale_image(user_image, arguments.scale)
     else:
-        if arguments.width / arguments.height != image_width / image_height:
-            print("Proportions of given image and output image are not equal")
         modified_image = resize_image(
             user_image,
             arguments.width,
