@@ -21,6 +21,7 @@ def get_args():
     parser.add_argument(
         "-height",
         help="Height of output image",
+        default=None,
         type=int
     )
     parser.add_argument(
@@ -45,18 +46,19 @@ def get_args():
         parser.error("No arguments specified")
     if args.scale and (args.height or args.width):
         parser.error("Can not use both scale and height or width")
-    if checker(args.scale) or checker(args.width) or checker(args.heigth):
+    if checker(args.scale) or checker(args.width) or checker(args.height):
         parser.error("Arguments can not be less or equal to zero")
     if args.scale and args.height and args.width is None:
         parser.error("No resize arguments specified")
     return args
 
 
-def checker(value):
-    if value > 0 or value is None:
+def checker(arg):
+    if arg is None:
         return False
-    else:
-        return True
+    if arg > 0:
+        return False
+    return True
 
 
 def open_image(path_to_image):
@@ -116,10 +118,12 @@ def save_image(image, path):
         return False
 
 
-def check_proportions(image, height, width):
-    _image_height, _image_width = image.size
-    if round(_image_width/image_height, 2) != round(width/height, 2):
-        return True
+def get_proportions_error(original_image, resized_image):
+    _height, _width = original_image.size
+    height, width = resized_image.size
+    if round(_width/_height, 2) != round(width/height, 2):
+        return "Proportions of given image and output image are not equal"
+    return None
 
 
 if __name__ == "__main__":
@@ -131,13 +135,15 @@ if __name__ == "__main__":
     if arguments.scale is not None:
         modified_image = rescale_image(user_image, arguments.scale)
     else:
-        if check_proportions(user_image, arguments.height, arguments.width):
-            print("Proportions of given image and output image are not equal")
         modified_image = resize_image(
             user_image,
             arguments.width,
             arguments.height
         )
+        print(get_proportions_error(
+            user_image,
+            modified_image
+        ))
     if arguments.output is None:
         output_path = generate_output_path(arguments.path, modified_image.size)
     else:
@@ -146,7 +152,6 @@ if __name__ == "__main__":
             modified_image.size,
             arguments.output
         )
-    print(output_path)
     if save_image(modified_image, output_path):
         print("Image saved. Path to file: {}".format(output_path))
     else:
