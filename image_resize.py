@@ -118,6 +118,23 @@ def generate_output_path(original_path, size, new_path=None):
     return output_path
 
 
+def get_path(output_path):
+    if output_path is None:
+        _path_to_file = generate_output_path(
+            arguments.path,
+            modified_image.size
+        )
+    elif is_file(output_path):
+        _path_to_file = arguments.output
+    else:
+        _path_to_file = generate_output_path(
+            arguments.path,
+            modified_image.size,
+            arguments.output
+        )
+    return _path_to_file
+
+
 def is_file(path):
     return bool(os.path.splitext(path)[1])
 
@@ -152,19 +169,7 @@ if __name__ == "__main__":
     )
     if is_proportions_error(user_image, modified_image):
         print("Proportions of given image and output image are not equal")
-    if arguments.output is None:
-        path_to_file = generate_output_path(
-            arguments.path,
-            modified_image.size
-        )
-    elif is_file(arguments.output):
-        path_to_file = arguments.output
-    else:
-        path_to_file = generate_output_path(
-            arguments.path,
-            modified_image.size,
-            arguments.output
-        )
+    path_to_file = get_path(arguments.output)
     if save_image(modified_image, path_to_file):
         print("Image saved. Path to file: {}".format(path_to_file))
     else:
