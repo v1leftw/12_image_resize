@@ -8,7 +8,7 @@ Available options:
 -height  - height of output image (can be used without width, heigth will be changed proprtionally)
 -width  - width of output image (can be used without hegth, width will be changed proprtionally)
 -scale  - scale's coefficient of output image (can not be used with height and width at once)
--output - path to output image. If not specified image will be saved in original path to given image
+-output - path or filename of output image. If not specified image will be saved in original path to given image
 ```
 
 heigth, width, scale must be integer

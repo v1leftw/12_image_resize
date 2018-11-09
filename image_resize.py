@@ -38,22 +38,27 @@ def get_args():
     )
     parser.add_argument(
         "-output",
-        help="Directory that stores output image",
-        type=validate_path
+        help="Path to output image"
     )
-    args = parser.parse_args()
-    if args is None:
-        parser.error("No arguments specified")
+    return parser.parse_args()
+
+
+def validate_arguments(args):
+    arg_error = None
     if args.scale and (args.height or args.width):
-        parser.error("Can not use both scale and height or width")
-    if checker(args.scale) or checker(args.width) or checker(args.height):
-        parser.error("Arguments can not be less or equal to zero")
+        arg_error = "Can not use both scale and height or width"
+    if check_argument(args.scale):
+        arg_error = "Scale can not be less or equal to zero"
+    if check_argument(args.width):
+        arg_error = "Width can not be less or equal to zero"
+    if check_argument(args.height):
+        arg_error = "Heigth can not be less or equal to zero"
     if args.scale and args.height and args.width is None:
-        parser.error("No resize arguments specified")
-    return args
+        arg_error = "No resize arguments specified"
+    return args, arg_error
 
 
-def checker(arg):
+def check_argument(arg):
     if arg is None:
         return False
     if arg > 0:
@@ -69,45 +74,52 @@ def open_image(path_to_image):
         return None
 
 
-def resize_image(image, width, height):
+def resize_image(image, width, height, scale):
+    return image.resize(calucalate_proportions(
+        image,
+        width,
+        height,
+        scale
+    ))
+
+
+def calucalate_proportions(image, width, height, scale):
     user_image_height, user_image_width = image.size
     image_proportions = user_image_width/user_image_height
+    if scale:
+        height = round(user_image_height * scale)
+        width = round(user_image_width * scale)
     if width is None:
-        return image.resize((
-            height,
-            round(user_image_width * image_proportions)
-        ))
+        width = round(user_image_width * image_proportions)
     if height is None:
-        return image.resize((
-            round(user_image_height * image_proportions),
-            width
-        ))
-    return image.resize((height, width))
-
-
-def rescale_image(image, scale):
-    height, width = image.size
-    return image.resize((round(height * scale), round(width * scale)))
+        height = round(user_image_height * image_proportions)
+    return height, width
 
 
 def generate_output_path(original_path, size, new_path=None):
     height, width = size
-    ext = os.path.splitext(os.path.abspath(original_path))
+    ext = os.path.splitext(os.path.abspath(original_path))[1]
     if new_path is None:
-        return "{}__{}x{}{}".format(
+        output_path = "{}__{}x{}{}".format(
             original_path.split(".")[0],
             width,
             height,
-            ext[1]
+            ext
         )
-    filename = os.path.basename(original_path)
-    return "{}{}__{}x{}{}".format(
-        new_path.split(".")[0],
-        filename.split(".")[0],
-        width,
-        height,
-        ext[1]
-    )
+    else:
+        filename = os.path.basename(original_path)
+        output_path = "{}{}__{}x{}{}".format(
+            new_path.split(".")[0],
+            filename.split(".")[0],
+            width,
+            height,
+            ext
+        )
+    return output_path
+
+
+def is_file(path):
+    return bool(os.path.splitext(path)[1])
 
 
 def save_image(image, path):
@@ -118,42 +130,43 @@ def save_image(image, path):
         return False
 
 
-def get_proportions_error(original_image, resized_image):
+def is_proportions_error(original_image, resized_image):
     _height, _width = original_image.size
     height, width = resized_image.size
-    if round(_width/_height, 2) != round(width/height, 2):
-        return "Proportions of given image and output image are not equal"
-    return None
+    return round(_width/_height, 2) != round(width/height, 2)
 
 
 if __name__ == "__main__":
-    arguments = get_args()
+    arguments, error = validate_arguments(get_args())
+    if error:
+        exit(error)
     user_image = open_image(arguments.path)
     if user_image is None:
         exit("Can not open image")
     image_height, image_width = user_image.size
-    if arguments.scale is not None:
-        modified_image = rescale_image(user_image, arguments.scale)
-    else:
-        modified_image = resize_image(
-            user_image,
-            arguments.width,
-            arguments.height
-        )
-        print(get_proportions_error(
-            user_image,
-            modified_image
-        ))
+    modified_image = resize_image(
+        user_image,
+        arguments.width,
+        arguments.height,
+        arguments.scale
+    )
+    if is_proportions_error(user_image, modified_image):
+        print("Proportions of given image and output image are not equal")
     if arguments.output is None:
-        output_path = generate_output_path(arguments.path, modified_image.size)
+        path_to_file = generate_output_path(
+            arguments.path,
+            modified_image.size
+        )
+    elif is_file(arguments.output):
+        path_to_file = arguments.output
     else:
-        output_path = generate_output_path(
+        path_to_file = generate_output_path(
             arguments.path,
             modified_image.size,
             arguments.output
         )
-    if save_image(modified_image, output_path):
-        print("Image saved. Path to file: {}".format(output_path))
+    if save_image(modified_image, path_to_file):
+        print("Image saved. Path to file: {}".format(path_to_file))
     else:
         print("Could not save image")
     user_image.close()
